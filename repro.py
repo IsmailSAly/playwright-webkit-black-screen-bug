@@ -1,17 +1,35 @@
 from playwright.sync_api import sync_playwright
+import json
 
 def print_mobile_context():
     with sync_playwright() as p:
         browser = p.webkit.launch(headless=False)
-        ipad = p.devices["iPad (gen 7)"]
+        ipad_settings = p.devices["iPad (gen 7)"]
+        print("🔹 Playwright Device Preset: iPad (gen 7)")
+        print(json.dumps(ipad_settings, indent=2))
         # Create a mobile context
         context = browser.new_context(
             #viewport={"width": 768, "height": 1024},  # iPad 7th Gen
             #is_mobile=True,
             #device_scale_factor=2
-            **ipad
+            **ipad_settings
         )
         page = context.new_page()
+        page.evaluate(
+            """(() => {
+                Object.defineProperty(window, 'matchMedia', {
+                    value: query => ({
+                        matches: false,  // Force mobile media queries to return false
+                        media: query,
+                        onchange: null,
+                        addListener: function() {},
+                        removeListener: function() {},
+                        addEventListener: function() {},
+                        removeEventListener: function() {}
+                    })
+                });
+            })();"""
+        )
 
         # Print viewport size (use `page.viewport_size()` instead)
         print(f"Viewport Size: {page.viewport_size}")
